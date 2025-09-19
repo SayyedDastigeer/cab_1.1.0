@@ -364,7 +364,7 @@ const OutstationBooking: React.FC = () => {
             type="submit"
             className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white py-5 rounded-2xl font-display font-bold text-xl flex items-center justify-center space-x-3 transition-all duration-300 shadow-xl"
           >
-            <span>Book via WhatsApp</span>
+            <span>Book Ride</span>
             <ArrowRight className="w-6 h-6" />
           </motion.button>
         </form>

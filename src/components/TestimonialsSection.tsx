@@ -26,7 +26,7 @@ const TestimonialsSection: React.FC = () => {
       name: 'Anita Desai',
       location: 'Surat',
       rating: 5,
-      text: 'Amazing experience! The booking process was smooth and the journey was comfortable. Will definitely use RideMax again for future travels.',
+      text: 'Amazing experience! The booking process was smooth and the journey was comfortable. Will definitely use Saffari again for future travels.',
       image: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=150',
       service: 'City Ride'
     },
@@ -86,7 +86,7 @@ const TestimonialsSection: React.FC = () => {
             <span className="block text-primary-600 dark:text-primary-400">Say About Us</span>
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            Join thousands of satisfied customers who trust RideMax for their transportation needs
+            Join thousands of satisfied customers who trust Saffari for their transportation needs
           </p>
         </motion.div>
 

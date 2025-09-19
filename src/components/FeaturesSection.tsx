@@ -147,7 +147,7 @@ const FeaturesSection: React.FC = () => {
         >
           <div className="inline-flex items-center space-x-2 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-4 py-2 rounded-full text-sm font-medium mb-6">
             <Shield className="w-4 h-4" />
-            <span>Why Choose RideMax</span>
+            <span>Why Choose Saffari</span>
           </div>
           <h2 className="text-4xl sm:text-5xl font-display font-bold text-gray-900 dark:text-white mb-6">
             Your Trust is Our

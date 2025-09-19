@@ -73,7 +73,7 @@ const AdminLogin: React.FC = () => {
             Admin Login
           </h1>
           <p className="text-gray-600 dark:text-gray-300">
-            Secure access to RideMax admin dashboard
+            Secure access to Saffari admin dashboard
           </p>
         </div>
 

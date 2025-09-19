@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -33,7 +33,6 @@ function AppLayout() {
       
       {/* Conditionally render the Footer and StickyButton */}
       {!isAdminRoute && <Footer />}
-      {!isAdminRoute && <StickyBookButton />}
 
       <Toaster position="top-right" />
     </div>

@@ -336,7 +336,7 @@ const MumbaiLocalBooking: React.FC = () => {
             disabled={distance === 0 || isCalculating}
             className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-5 rounded-2xl font-bold"
           >
-            {isCalculating ? 'Calculating...' : 'Book via WhatsApp'}
+            {isCalculating ? 'Calculating...' : 'Book Ride'}
           </motion.button>
         </form>
       </motion.div>

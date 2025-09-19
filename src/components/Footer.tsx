@@ -8,9 +8,7 @@ const Footer: React.FC = () => {
 
   const quickLinks = [
     { name: 'Home', path: '/' },
-    { name: 'Book Ride', path: '/services' },
     { name: 'Services', path: '/services' },
-    { name: 'About Us', path: '/about' },
     { name: 'Contact', path: '/contact' }
   ];
 
@@ -19,27 +17,13 @@ const Footer: React.FC = () => {
     'Outstation Trips',
     'Airport Transfers',
     'Car Rentals',
-    'Corporate Bookings',
-    'Emergency Services'
   ];
 
-  const cities = [
-    'Mumbai',
-    'Pune', 
-    'Surat',
-    'Nashik'
-  ];
 
   const socialLinks = [
     { icon: Facebook, href: '#', label: 'Facebook' },
     { icon: Twitter, href: '#', label: 'Twitter' },
     { icon: Instagram, href: '#', label: 'Instagram' }
-  ];
-
-  const trustBadges = [
-    { icon: Shield, text: 'Secure Payments' },
-    { icon: Star, text: '4.8+ Rating' },
-    { icon: Award, text: 'Premium Service' }
   ];
 
   return (
@@ -71,29 +55,17 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex flex-col">
                 <span className="text-2xl font-display font-bold bg-gradient-to-r from-primary-400 to-primary-300 bg-clip-text text-transparent">
-                  RideMax
+                  Saffari
                 </span>
                 <span className="text-xs text-gray-400 -mt-1">Premium Cabs</span>
               </div>
             </div>
 
             <p className="text-gray-300 leading-relaxed">
-              Premium cab services across Maharashtra. Safe, reliable, and comfortable 
-              transportation for all your travel needs with professional drivers and modern vehicles.
+              Reliable transportation within Mumbai and across cities in Maharashtra
             </p>
 
             {/* Trust Badges */}
-            <div className="flex flex-wrap gap-3">
-              {trustBadges.map((badge, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2"
-                >
-                  <badge.icon className="w-4 h-4 text-primary-400" />
-                  <span className="text-xs text-gray-300">{badge.text}</span>
-                </div>
-              ))}
-            </div>
 
             {/* Social Links */}
             <div className="flex space-x-4">
@@ -166,7 +138,7 @@ const Footer: React.FC = () => {
                 <div className="p-2 bg-primary-500/20 rounded-lg group-hover:bg-primary-500/30 transition-colors">
                   <Phone className="w-4 h-4 text-primary-400" />
                 </div>
-                <span>+91 98601 46819</span>
+                <span>+91 8265036513</span>
               </motion.a>
 
               <motion.a
@@ -207,28 +179,8 @@ const Footer: React.FC = () => {
             transition={{ duration: 0.6, delay: 0.5 }}
             className="text-gray-400 text-center lg:text-left"
           >
-            © {currentYear} RideMax. All rights reserved. Made with ❤️ for better transportation.
+            © {currentYear} saffari.co.in Your trusted partner for every journey.
           </motion.p>
-          
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-            className="flex flex-wrap justify-center gap-6 text-sm"
-          >
-            <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
-              Terms of Service
-            </a>
-            <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
-              Refund Policy
-            </a>
-            <a href="#" className="text-gray-400 hover:text-primary-400 transition-colors">
-              Support
-            </a>
-          </motion.div>
         </div>
       </div>
     </footer>

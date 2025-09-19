@@ -71,8 +71,8 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   useEffect(() => {
     // Check for existing admin session
-    const savedAdmin = localStorage.getItem('ridemax_admin');
-    const savedPricing = localStorage.getItem('ridemax_pricing');
+    const savedAdmin = localStorage.getItem('Saffari_admin');
+    const savedPricing = localStorage.getItem('Saffari_pricing');
     
     if (savedAdmin) {
       setAdmin(JSON.parse(savedAdmin));
@@ -92,7 +92,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         isAuthenticated: true
       };
       setAdmin(adminUser);
-      localStorage.setItem('ridemax_admin', JSON.stringify(adminUser));
+      localStorage.setItem('Saffari_admin', JSON.stringify(adminUser));
       return { success: true };
     }
     return { success: false, error: 'Invalid admin credentials' };
@@ -100,12 +100,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const logout = () => {
     setAdmin(null);
-    localStorage.removeItem('ridemax_admin');
+    localStorage.removeItem('Saffari_admin');
   };
 
   const updatePricing = (newPricing: PricingConfig) => {
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
   const addCity = (city: string) => {
@@ -114,7 +114,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       cities: [...pricing.cities, city]
     };
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
   const removeCity = (city: string) => {
@@ -123,7 +123,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       cities: pricing.cities.filter(c => c !== city)
     };
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
   const addRoute = (fromCity: string, toCity: string, fourSeaterPrice: number, sixSeaterPrice: number) => {
@@ -146,7 +146,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
   const updateRoute = (routeKey: string, fourSeaterPrice: number, sixSeaterPrice: number) => {
@@ -161,7 +161,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     };
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
   const deleteRoute = (routeKey: string) => {
@@ -171,7 +171,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       outstation: remainingRoutes
     };
     setPricing(newPricing);
-    localStorage.setItem('ridemax_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
   return (
     <AdminContext.Provider value={{ admin, pricing, login, logout, updatePricing, addCity, removeCity, addRoute, updateRoute, deleteRoute }}>

@@ -60,7 +60,7 @@ const Header: React.FC = () => {
             </motion.div>
             <div className="flex flex-col">
               <span className="text-2xl font-display font-bold bg-gradient-to-r from-primary-600 to-primary-500 bg-clip-text text-transparent dark:from-primary-400 dark:to-primary-300">
-                RideMax
+                Saffari
               </span>
               <span className="text-xs text-gray-500 dark:text-gray-400 -mt-1">Premium Cabs</span>
             </div>

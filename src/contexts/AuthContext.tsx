@@ -35,7 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     // Check for existing user session
-    const savedUser = localStorage.getItem('ridemax_user');
+    const savedUser = localStorage.getItem('Saffari_user');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
@@ -50,11 +50,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: 'admin',
           phone: 'admin',
           name: 'Administrator',
-          email: 'admin@ridemax.com',
+          email: 'admin@Saffari.com',
           role: 'admin'
         };
         setUser(adminUser);
-        localStorage.setItem('ridemax_user', JSON.stringify(adminUser));
+        localStorage.setItem('Saffari_user', JSON.stringify(adminUser));
         return { success: true };
       }
 
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setUser(userData);
-      localStorage.setItem('ridemax_user', JSON.stringify(userData));
+      localStorage.setItem('Saffari_user', JSON.stringify(userData));
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Login failed. Please try again.' };
@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
 
       setUser(userData);
-      localStorage.setItem('ridemax_user', JSON.stringify(userData));
+      localStorage.setItem('Saffari_user', JSON.stringify(userData));
       return { success: true };
     } catch (error) {
       return { success: false, error: 'Registration failed. Please try again.' };
@@ -141,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('ridemax_user');
+    localStorage.removeItem('Saffari_user');
   };
 
   const isAdmin = () => {
