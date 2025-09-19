@@ -9,8 +9,8 @@ const Home: React.FC = () => {
     <div>
       <Hero />
       <FeaturesSection />
-      <TestimonialsSection />
-      <CTASection />
+      
+     <footer></footer>
     </div>
   );
 };

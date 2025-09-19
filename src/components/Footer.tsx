@@ -197,26 +197,7 @@ const Footer: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Cities We Serve */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          className="border-t border-gray-800 pt-8 mb-8"
-        >
-          <h3 className="text-xl font-display font-bold mb-6 text-center text-white">Cities We Serve</h3>
-          <div className="flex flex-wrap justify-center gap-4">
-            {cities.map((city, index) => (
-              <motion.span
-                key={index}
-                whileHover={{ scale: 1.05, y: -2 }}
-                className="bg-gradient-to-r from-primary-500/20 to-primary-600/20 border border-primary-500/30 px-6 py-3 rounded-full text-primary-300 font-medium hover:from-primary-500/30 hover:to-primary-600/30 transition-all duration-300 cursor-pointer"
-              >
-                {city}
-              </motion.span>
-            ))}
-          </div>
-        </motion.div>
+        
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 pt-8 flex flex-col lg:flex-row justify-between items-center space-y-4 lg:space-y-0">
