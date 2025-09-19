@@ -26,6 +26,18 @@ interface LocationCoordinates {
   lng: number;
 }
 
+// Helper function to validate Indian phone numbers (10 digits)
+const isValidPhoneNumber = (phone: string): boolean => {
+  const phoneRegex = /^\d{10}$/;
+  return phoneRegex.test(phone);
+};
+
+// Helper function to validate email addresses
+const isValidEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
 const MumbaiLocalBooking: React.FC = () => {
   const [booking, setBooking] = useState<BookingData>({
     customerName: '',
@@ -138,6 +150,8 @@ const MumbaiLocalBooking: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Check for all required fields first
     if (
       !booking.customerName ||
       !booking.customerPhone ||
@@ -147,6 +161,18 @@ const MumbaiLocalBooking: React.FC = () => {
       !booking.time
     ) {
       toast.error('Please fill all required fields');
+      return;
+    }
+
+    // 2. Validate phone number using the helper function
+    if (!isValidPhoneNumber(booking.customerPhone)) {
+      toast.error('Please enter a valid 10-digit phone number.');
+      return;
+    }
+
+    // 3. Validate email if it's provided. The email field is optional.
+    if (booking.customerEmail && !isValidEmail(booking.customerEmail)) {
+      toast.error('Please enter a valid email address.');
       return;
     }
 
@@ -227,7 +253,7 @@ const MumbaiLocalBooking: React.FC = () => {
                 value={booking.customerPhone}
                 onChange={e => handleFieldChange('customerPhone', e.target.value)}
                 className="w-full p-3 border rounded-lg"
-                placeholder="Enter phone number"
+                placeholder="Enter 10-digit phone number"
                 required
               />
             </div>
