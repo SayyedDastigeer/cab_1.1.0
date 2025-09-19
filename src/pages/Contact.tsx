@@ -15,14 +15,14 @@ const Contact: React.FC = () => {
     {
       icon: Phone,
       title: 'Phone',
-      details: '+91 98765 43210',
-      action: () => window.open('tel:+919876543210')
+      details: '+91 8265036513',
+      action: () => window.open('tel:+918265036513')
     },
     {
       icon: Mail,
       title: 'Email',
-      details: 'info@ridemax.com',
-      action: () => window.open('mailto:info@ridemax.com')
+      details: 'vpspelhar@gmail.com',
+      action: () => window.open('mailto:vpspelhar@gmail.com')
     },
     {
       icon: MapPin,

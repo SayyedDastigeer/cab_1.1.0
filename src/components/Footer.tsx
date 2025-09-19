@@ -170,14 +170,14 @@ const Footer: React.FC = () => {
               </motion.a>
 
               <motion.a
-                href="mailto:info@ridemax.com"
+                href="mailto:vpspelhar@gmail.com"
                 whileHover={{ x: 5 }}
                 className="flex items-center space-x-3 text-gray-300 hover:text-primary-400 transition-all duration-300 group"
               >
                 <div className="p-2 bg-primary-500/20 rounded-lg group-hover:bg-primary-500/30 transition-colors">
                   <Mail className="w-4 h-4 text-primary-400" />
                 </div>
-                <span>info@ridemax.com</span>
+                <span>vpspelhar@gmail.com</span>
               </motion.a>
 
               <div className="flex items-start space-x-3 text-gray-300">
