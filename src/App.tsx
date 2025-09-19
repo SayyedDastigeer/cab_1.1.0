@@ -11,7 +11,7 @@ import Services from './pages/Services';
 import Contact from './pages/Contact';
 import AdminLogin from './pages/AdminLogin';
 import AdminDashboard from './pages/AdminDashboard';
-import StickyBookButton from './components/StickyBookButton';
+
 
 // A new component to handle conditional layout
 function AppLayout() {
@@ -33,7 +33,7 @@ function AppLayout() {
       
       {/* Conditionally render the Footer and StickyButton */}
       {!isAdminRoute && <Footer />}
-      {!isAdminRoute && <StickyBookButton />}
+   
 
       <Toaster position="top-right" />
     </div>

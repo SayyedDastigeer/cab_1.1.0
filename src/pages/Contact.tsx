@@ -27,7 +27,7 @@ const Contact: React.FC = () => {
     {
       icon: MapPin,
       title: 'Office',
-      details: 'Mumbai, Maharashtra, India',
+      details: 'Vasai,Mumbai, Maharashtra, India',
       action: null
     },
     {
@@ -49,7 +49,7 @@ const Contact: React.FC = () => {
       `Contact Form Submission:\n\nName: ${formData.name}\nEmail: ${formData.email}\nPhone: ${formData.phone}\n\nMessage: ${formData.message}`
     );
     
-    window.open(`https://wa.me/919876543210?text=${message}`, '_blank');
+    window.open(`https://wa.me/918265036513?text=${message}`, '_blank');
     toast.success('Redirecting to WhatsApp');
     
     // Reset form
