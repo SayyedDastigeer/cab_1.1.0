@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAdmin } from '../contexts/AdminContext';
@@ -7,73 +7,78 @@ import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
 import RouteMap from './RouteMap';
 import FareBreakdown from './FareBreakdown';
-import { getFareBreakdown, isAirportLocation } from '../lib/geoapify';
 import GoogleMapsAutocomplete from './LocationIQAutocomplete';
 
-interface BookingData {
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  pickup: string;
-  drop: string;
-  carType: '4-seater' | '6-seater';
-  date: string;
-  time: string;
-}
-
+// Assuming these are external helper functions and types
+// For this updated code, you'll need to make sure these match the new logic.
 interface LocationCoordinates {
   lat: number;
   lng: number;
 }
 
 // Helper function to validate Indian phone numbers (10 digits)
-const isValidPhoneNumber = (phone: string): boolean => {
+const isValidPhoneNumber = (phone) => {
   const phoneRegex = /^\d{10}$/;
   return phoneRegex.test(phone);
 };
 
 // Helper function to validate email addresses
-const isValidEmail = (email: string): boolean => {
+const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
-const MumbaiLocalBooking: React.FC = () => {
-  const [booking, setBooking] = useState<BookingData>({
+// Helper function to calculate straight-line distance if API fails
+const calculateStraightLineDistance = (pickup, drop) => {
+  const R = 6371; // Radius of Earth in km
+  const dLat = (drop.lat - pickup.lat) * Math.PI / 180;
+  const dLng = (drop.lng - pickup.lng) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(pickup.lat * Math.PI / 180) *
+    Math.cos(drop.lat * Math.PI / 180) *
+    Math.sin(dLng / 2) *
+    Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c * 100) / 100;
+};
+
+const MumbaiLocalBooking = () => {
+  const [booking, setBooking] = useState({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
     pickup: '',
     drop: '',
     carType: '4-seater',
+    tripType: 'normal', // 'normal' or 'airport'
     date: '',
     time: ''
   });
 
-  const [pickupCoords, setPickupCoords] = useState<LocationCoordinates | null>(null);
-  const [dropCoords, setDropCoords] = useState<LocationCoordinates | null>(null);
-  const [distance, setDistance] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const [pickupCoords, setPickupCoords] = useState(null);
+  const [dropCoords, setDropCoords] = useState(null);
+  const [distance, setDistance] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
 
+  // Assuming `useAdmin` fetches and provides the `local_fares` data
+  // under `pricing.mumbaiLocal`
   const { pricing } = useAdmin();
   const { user } = useAuth();
+  
+  // A temporary state for Mumbai local pricing to avoid errors if the context isn't ready
+  const [mumbaiLocalRates, setMumbaiLocalRates] = useState(null);
 
-  const calculateStraightLineDistance = (pickup: LocationCoordinates, drop: LocationCoordinates) => {
-    const R = 6371;
-    const dLat = (drop.lat - pickup.lat) * Math.PI / 180;
-    const dLng = (drop.lng - pickup.lng) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(pickup.lat * Math.PI / 180) *
-      Math.cos(drop.lat * Math.PI / 180) *
-      Math.sin(dLng / 2) *
-      Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c * 100) / 100;
-  };
+  useEffect(() => {
+    // This effect ensures we have the pricing data before calculating fare
+    if (pricing?.mumbaiLocal?.length > 0) {
+      setMumbaiLocalRates(pricing.mumbaiLocal[0]);
+    }
+  }, [pricing]);
 
-  const calculateRouteDetails = async (pickup: LocationCoordinates, drop: LocationCoordinates) => {
+
+  const calculateRouteDetails = async (pickup, drop) => {
     setIsCalculating(true);
     try {
       const response = await fetch(
@@ -98,12 +103,36 @@ const MumbaiLocalBooking: React.FC = () => {
   };
 
   const getFare = () => {
-    if (distance === 0) return null;
-    const isAirportTrip = isAirportLocation(booking.pickup) || isAirportLocation(booking.drop);
-    return getFareBreakdown(distance, isAirportTrip, booking.carType, pricing.mumbaiLocal);
+    if (distance === 0 || !mumbaiLocalRates) {
+      return null;
+    }
+
+    let ratePerKm = 0;
+    if (booking.tripType === 'airport') {
+      if (booking.carType === '4-seater') {
+        ratePerKm = mumbaiLocalRates.airport_4_seater_rate_per_km;
+      } else {
+        ratePerKm = mumbaiLocalRates.airport_6_seater_rate_per_km;
+      }
+    } else { // Normal trip
+      if (booking.carType === '4-seater') {
+        ratePerKm = mumbaiLocalRates.normal_4_seater_rate_per_km;
+      } else {
+        ratePerKm = mumbaiLocalRates.normal_6_seater_rate_per_km;
+      }
+    }
+
+    const totalFare = Math.round(distance * ratePerKm);
+    const isMinimumFare = totalFare < 100; // Example minimum fare logic
+
+    return {
+      ratePerKm: ratePerKm,
+      total: isMinimumFare ? 100 : totalFare,
+      isMinimumFare: isMinimumFare
+    };
   };
 
-  const handlePickupChange = (value: string, coordinates?: LocationCoordinates) => {
+  const handlePickupChange = (value, coordinates) => {
     setBooking({ ...booking, pickup: value });
     if (coordinates) {
       setPickupCoords(coordinates);
@@ -111,7 +140,7 @@ const MumbaiLocalBooking: React.FC = () => {
     }
   };
 
-  const handleDropChange = (value: string, coordinates?: LocationCoordinates) => {
+  const handleDropChange = (value, coordinates) => {
     setBooking({ ...booking, drop: value });
     if (coordinates) {
       setDropCoords(coordinates);
@@ -119,14 +148,14 @@ const MumbaiLocalBooking: React.FC = () => {
     }
   };
 
-  const handleFieldChange = (field: keyof BookingData, value: string) => {
+  const handleFieldChange = (field, value) => {
     setBooking({ ...booking, [field]: value });
   };
 
   const saveBookingToDatabase = async () => {
     try {
       const { error } = await supabase.from('bookings').insert({
-        customer_id: 'guest',
+        customer_id: 'guest', // or user.id
         customer_name: booking.customerName,
         customer_phone: booking.customerPhone,
         customer_email: booking.customerEmail || null,
@@ -148,10 +177,9 @@ const MumbaiLocalBooking: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    // 1. Check for all required fields first
     if (
       !booking.customerName ||
       !booking.customerPhone ||
@@ -164,13 +192,11 @@ const MumbaiLocalBooking: React.FC = () => {
       return;
     }
 
-    // 2. Validate phone number using the helper function
     if (!isValidPhoneNumber(booking.customerPhone)) {
       toast.error('Please enter a valid 10-digit phone number.');
       return;
     }
 
-    // 3. Validate email if it's provided. The email field is optional.
     if (booking.customerEmail && !isValidEmail(booking.customerEmail)) {
       toast.error('Please enter a valid email address.');
       return;
@@ -189,7 +215,7 @@ const MumbaiLocalBooking: React.FC = () => {
     });
 
     const fareDetails = getFare();
-    const isAirportTrip = isAirportLocation(booking.pickup) || isAirportLocation(booking.drop);
+    const serviceType = booking.tripType === 'airport' ? 'Airport Transfer' : 'Local Ride';
 
     const message = encodeURIComponent(
       `Mumbai Local Booking Request:\n\nCustomer: ${booking.customerName}\nPhone: ${
@@ -199,7 +225,7 @@ const MumbaiLocalBooking: React.FC = () => {
       }\nDistance: ${distance} km\nDuration: ${duration} min\nCar Type: ${
         booking.carType
       }\nDate: ${booking.date}\nTime: ${booking.time}\nService Type: ${
-        isAirportTrip ? 'Airport Transfer' : 'Local Ride'
+        serviceType
       }\nEstimated Price: ₹${fareDetails?.total || 0}\n\nPlease confirm my booking.`
     );
 
@@ -289,8 +315,19 @@ const MumbaiLocalBooking: React.FC = () => {
             </div>
           </div>
 
-          {/* Date / Time / Car */}
-          <div className="grid md:grid-cols-3 gap-6">
+          {/* Trip Type / Date / Time / Car */}
+          <div className="grid md:grid-cols-4 gap-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold">Trip Type</label>
+              <select
+                value={booking.tripType}
+                onChange={e => handleFieldChange('tripType', e.target.value)}
+                className="w-full p-3 border rounded-lg"
+              >
+                <option value="normal">Normal</option>
+                <option value="airport">Airport</option>
+              </select>
+            </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold">Date *</label>
               <input
@@ -315,7 +352,7 @@ const MumbaiLocalBooking: React.FC = () => {
               <label className="block text-sm font-semibold">Car Type</label>
               <select
                 value={booking.carType}
-                onChange={e => handleFieldChange('carType', e.target.value as '4-seater' | '6-seater')}
+                onChange={e => handleFieldChange('carType', e.target.value)}
                 className="w-full p-3 border rounded-lg"
               >
                 <option value="4-seater">4 Seater</option>
@@ -339,18 +376,14 @@ const MumbaiLocalBooking: React.FC = () => {
                     : undefined
                 }
               />
-              {distance > 0 && !isCalculating && (
+              {distance > 0 && !isCalculating && fareDetails && (
                 <FareBreakdown
                   distance={distance}
                   duration={duration}
-                  baseFare={getFare()?.baseFare || 0}
-                  distanceFare={getFare()?.distanceFare || 0}
-                  carSurcharge={getFare()?.carSurcharge || 0}
-                  ratePerKm={getFare()?.ratePerKm || 0}
+                  ratePerKm={fareDetails.ratePerKm}
                   carType={booking.carType}
-                  total={getFare()?.total || 0}
-                  isAirportTrip={isAirportLocation(booking.pickup) || isAirportLocation(booking.drop)}
-                  isMinimumFare={getFare()?.isMinimumFare || false}
+                  total={fareDetails.total}
+                  isMinimumFare={fareDetails.isMinimumFare}
                 />
               )}
             </div>
@@ -359,7 +392,7 @@ const MumbaiLocalBooking: React.FC = () => {
           {/* Submit */}
           <motion.button
             type="submit"
-            disabled={distance === 0 || isCalculating}
+            disabled={distance === 0 || isCalculating || !mumbaiLocalRates}
             className="w-full bg-gradient-to-r from-green-500 to-green-600 text-white py-5 rounded-2xl font-bold"
           >
             {isCalculating ? 'Calculating...' : 'Book Ride'}
