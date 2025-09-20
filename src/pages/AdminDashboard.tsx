@@ -46,6 +46,7 @@ interface Booking {
 
 const AdminDashboard: React.FC = () => {
   const { admin, pricing, logout, updatePricing, addCity, removeCity, addRoute, updateRoute, deleteRoute } = useAdmin();
+  const { fetchCitiesAndRoutes } = useAdmin();
   const { user, logout: authLogout } = useAuth();
   const navigate = useNavigate();
   
@@ -58,6 +59,7 @@ const AdminDashboard: React.FC = () => {
   const [newCity, setNewCity] = useState('');
   const [newRoute, setNewRoute] = useState({ from: '', to: '', fourSeater: 0, sixSeater: 0 });
   const [editingRoute, setEditingRoute] = useState<string | null>(null);
+  const [tempRoutes, setTempRoutes] = useState<{ [key: string]: { price_4_seater: number; price_6_seater: number } }>({});
   // newPost, editingPost states removed
 
   useEffect(() => {
@@ -67,6 +69,7 @@ const AdminDashboard: React.FC = () => {
     }
     fetchBookings();
     // fetchPromotionalPosts() removed
+    fetchCitiesAndRoutes();
   }, [admin, user, navigate]);
 
   useEffect(() => {
@@ -127,44 +130,57 @@ const AdminDashboard: React.FC = () => {
     toast.success('Pricing updated successfully');
   };
 
-  const handleAddCity = () => {
-    if (newCity.trim() && !tempPricing.cities.includes(newCity.trim())) {
-      addCity(newCity.trim());
-      setNewCity('');
-      toast.success('City added successfully');
-    }
-  };
-
-  const handleRemoveCity = (city: string) => {
-    removeCity(city);
-    toast.success('City removed successfully');
-  };
-
-  const handleAddRoute = () => {
-    if (newRoute.from && newRoute.to && newRoute.fourSeater > 0 && newRoute.sixSeater > 0) {
-      try {
-        addRoute(newRoute.from, newRoute.to, newRoute.fourSeater, newRoute.sixSeater);
-        setNewRoute({ from: '', to: '', fourSeater: 0, sixSeater: 0 });
-        toast.success('Route added successfully');
-      } catch (error: any) {
-        toast.error(error.message);
+  const handleAddCity = async () => {
+    if (newCity.trim() && !pricing.cities.some(c => c.name === newCity.trim())) {
+      const success = await addCity(newCity.trim());
+      if (success) {
+        setNewCity('');
       }
     }
   };
 
-  const handleUpdateRoute = (routeKey: string) => {
-    const route = tempPricing.outstation[routeKey];
-    if (route) {
-      updateRoute(routeKey, route['4-seater'], route['6-seater']);
-      setEditingRoute(null);
-      toast.success('Route updated successfully');
+  const handleRemoveCity = async (cityId: string) => {
+    if (confirm('Are you sure you want to remove this city?')) {
+      await removeCity(cityId);
     }
   };
 
-  const handleDeleteRoute = (routeKey: string) => {
+  const handleAddRoute = async () => {
+    if (newRoute.from && newRoute.to && newRoute.fourSeater > 0 && newRoute.sixSeater > 0) {
+      const success = await addRoute(newRoute.from, newRoute.to, newRoute.fourSeater, newRoute.sixSeater);
+      if (success) {
+        setNewRoute({ from: '', to: '', fourSeater: 0, sixSeater: 0 });
+      }
+    }
+  };
+
+  const handleUpdateRoute = async (routeId: string) => {
+    const route = tempRoutes[routeId];
+    if (route) {
+      const success = await updateRoute(routeId, route.price_4_seater, route.price_6_seater);
+      if (success) {
+        setEditingRoute(null);
+        setTempRoutes({});
+      }
+    }
+  };
+
+  const handleEditRoute = (routeId: string) => {
+    const route = pricing.routes.find(r => r.id === routeId);
+    if (route) {
+      setTempRoutes({
+        [routeId]: {
+          price_4_seater: route.price_4_seater,
+          price_6_seater: route.price_6_seater
+        }
+      });
+      setEditingRoute(routeId);
+    }
+  };
+
+  const handleDeleteRoute = async (routeId: string) => {
     if (confirm('Are you sure you want to delete this route?')) {
-      deleteRoute(routeKey);
-      toast.success('Route deleted successfully');
+      await deleteRoute(routeId);
     }
   };
 
@@ -626,7 +642,7 @@ const AdminDashboard: React.FC = () => {
                     >
                       <option value="">From City</option>
                       {pricing.cities.map(city => (
-                        <option key={city} value={city}>{city}</option>
+                        <option key={city.id} value={city.name}>{city.name}</option>
                       ))}
                     </select>
                     <select
@@ -635,8 +651,8 @@ const AdminDashboard: React.FC = () => {
                       className="p-3 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-600 dark:text-white"
                     >
                       <option value="">To City</option>
-                      {pricing.cities.filter(city => city !== newRoute.from).map(city => (
-                        <option key={city} value={city}>{city}</option>
+                      {pricing.cities.filter(city => city.name !== newRoute.from).map(city => (
+                        <option key={city.id} value={city.name}>{city.name}</option>
                       ))}
                     </select>
                     <input
@@ -665,52 +681,50 @@ const AdminDashboard: React.FC = () => {
 
                 {/* Existing Routes */}
                 <div className="space-y-4">
-                  {Object.entries(pricing.outstation).map(([routeKey, prices]) => (
-                    <div key={routeKey} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                  {pricing.routes.map((route) => (
+                    <div key={route.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 dark:text-white">{routeKey}</h4>
+                        <h4 className="font-medium text-gray-900 dark:text-white">{route.from_city} → {route.to_city}</h4>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {editingRoute === routeKey ? (
+                        {editingRoute === route.id ? (
                           <>
                             <input
                               type="number"
-                              value={tempPricing.outstation[routeKey]['4-seater']}
-                              onChange={(e) => setTempPricing({
-                                ...tempPricing,
-                                outstation: {
-                                  ...tempPricing.outstation,
-                                  [routeKey]: {
-                                    ...tempPricing.outstation[routeKey],
-                                    '4-seater': Number(e.target.value)
-                                  }
+                              value={tempRoutes[route.id]?.price_4_seater || route.price_4_seater}
+                              onChange={(e) => setTempRoutes({
+                                ...tempRoutes,
+                                [route.id]: {
+                                  ...tempRoutes[route.id],
+                                  price_4_seater: Number(e.target.value),
+                                  price_6_seater: tempRoutes[route.id]?.price_6_seater || route.price_6_seater
                                 }
                               })}
                               className="w-24 p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-600 dark:text-white"
                             />
                             <input
                               type="number"
-                              value={tempPricing.outstation[routeKey]['6-seater']}
-                              onChange={(e) => setTempPricing({
-                                ...tempPricing,
-                                outstation: {
-                                  ...tempPricing.outstation,
-                                  [routeKey]: {
-                                    ...tempPricing.outstation[routeKey],
-                                    '6-seater': Number(e.target.value)
-                                  }
+                              value={tempRoutes[route.id]?.price_6_seater || route.price_6_seater}
+                              onChange={(e) => setTempRoutes({
+                                ...tempRoutes,
+                                [route.id]: {
+                                  price_4_seater: tempRoutes[route.id]?.price_4_seater || route.price_4_seater,
+                                  price_6_seater: Number(e.target.value)
                                 }
                               })}
                               className="w-24 p-2 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-600 dark:text-white"
                             />
                             <button
-                              onClick={() => handleUpdateRoute(routeKey)}
+                              onClick={() => handleUpdateRoute(route.id)}
                               className="p-2 bg-green-600 text-white rounded hover:bg-green-700"
                             >
                               <Save className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => setEditingRoute(null)}
+                              onClick={() => {
+                                setEditingRoute(null);
+                                setTempRoutes({});
+                              }}
                               className="p-2 bg-gray-600 text-white rounded hover:bg-gray-700"
                             >
                               <X className="w-4 h-4" />
@@ -718,16 +732,18 @@ const AdminDashboard: React.FC = () => {
                           </>
                         ) : (
                           <>
-                            <span className="text-sm text-gray-600 dark:text-gray-300">4-seater: ₹{prices['4-seater']}</span>
-                            <span className="text-sm text-gray-600 dark:text-gray-300">6-seater: ₹{prices['6-seater']}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-300">4-seater: ₹{route.price_4_seater}</span>
+                            <span className="text-sm text-gray-600 dark:text-gray-300">6-seater: ₹{route.price_6_seater}</span>
                             <button
-                              onClick={() => setEditingRoute(routeKey)}
+                              onClick={() => {
+                                handleEditRoute(route.id);
+                              }}
                               className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
                             >
                               <Edit className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteRoute(routeKey)}
+                              onClick={() => handleDeleteRoute(route.id)}
                               className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -765,10 +781,10 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {pricing.cities.map(city => (
-                    <div key={city} className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
-                      <span className="text-gray-900 dark:text-white">{city}</span>
+                    <div key={city.id} className="flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg">
+                      <span className="text-gray-900 dark:text-white">{city.name}</span>
                       <button
-                        onClick={() => handleRemoveCity(city)}
+                        onClick={() => handleRemoveCity(city.id)}
                         className="text-red-600 hover:text-red-700"
                       >
                         <X className="w-4 h-4" />

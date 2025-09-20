@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import toast from 'react-hot-toast';
 
 interface Admin {
   id: string;
@@ -6,21 +8,28 @@ interface Admin {
   isAuthenticated: boolean;
 }
 
+interface City {
+  id: string;
+  name: string;
+}
+
+interface Route {
+  id: string;
+  from_city: string;
+  to_city: string;
+  price_4_seater: number;
+  price_6_seater: number;
+}
+
 interface PricingConfig {
-  outstation: {
-    [key: string]: {
-      '4-seater': number;
-      '6-seater': number;
-    };
-  };
   mumbaiLocal: {
     fourSeaterRate: number;
     sixSeaterRate: number;
     airportFourSeaterRate: number;
     airportSixSeaterRate: number;
   };
-  outstationSixSeaterSurcharge: number;
-  cities: string[];
+  cities: City[];
+  routes: Route[];
 }
 
 interface AdminContextType {
@@ -29,11 +38,12 @@ interface AdminContextType {
   login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   updatePricing: (newPricing: PricingConfig) => void;
-  addCity: (city: string) => void;
-  removeCity: (city: string) => void;
-  addRoute: (fromCity: string, toCity: string, fourSeaterPrice: number, sixSeaterPrice: number) => void;
-  updateRoute: (routeKey: string, fourSeaterPrice: number, sixSeaterPrice: number) => void;
-  deleteRoute: (routeKey: string) => void;
+  addCity: (cityName: string) => Promise<boolean>;
+  removeCity: (cityId: string) => Promise<boolean>;
+  addRoute: (fromCity: string, toCity: string, fourSeaterPrice: number, sixSeaterPrice: number) => Promise<boolean>;
+  updateRoute: (routeId: string, fourSeaterPrice: number, sixSeaterPrice: number) => Promise<boolean>;
+  deleteRoute: (routeId: string) => Promise<boolean>;
+  fetchCitiesAndRoutes: () => Promise<void>;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -47,22 +57,14 @@ export const useAdmin = () => {
 };
 
 const defaultPricing: PricingConfig = {
-  outstation: {
-    'Mumbai-Pune': { '4-seater': 2500, '6-seater': 3500 },
-    'Mumbai-Surat': { '4-seater': 3500, '6-seater': 4500 },
-    'Mumbai-Nashik': { '4-seater': 2800, '6-seater': 3800 },
-    'Pune-Surat': { '4-seater': 4000, '6-seater': 5000 },
-    'Pune-Nashik': { '4-seater': 2200, '6-seater': 3200 },
-    'Surat-Nashik': { '4-seater': 3200, '6-seater': 4200 }
-  },
   mumbaiLocal: {
     fourSeaterRate: 15, // per km for 4-seater
     sixSeaterRate: 18, // per km for 6-seater
     airportFourSeaterRate: 18, // per km for 4-seater airport transfers
     airportSixSeaterRate: 22 // per km for 6-seater airport transfers
   },
-  outstationSixSeaterSurcharge: 1000, // additional charge for 6-seater outstation cars
-  cities: ['Mumbai', 'Pune', 'Surat', 'Nashik']
+  cities: [],
+  routes: []
 };
 
 export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -72,7 +74,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     // Check for existing admin session
     const savedAdmin = localStorage.getItem('Saffari_admin');
-    const savedPricing = localStorage.getItem('Saffari_pricing');
+    const savedPricing = localStorage.getItem('Saffari_mumbai_pricing');
     
     if (savedAdmin) {
       setAdmin(JSON.parse(savedAdmin));
@@ -80,8 +82,40 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     if (savedPricing) {
       setPricing(JSON.parse(savedPricing));
+    } else {
+      // Fetch cities and routes from database
+      fetchCitiesAndRoutes();
     }
   }, []);
+
+  const fetchCitiesAndRoutes = async () => {
+    try {
+      // Fetch cities
+      const { data: cities, error: citiesError } = await supabase
+        .from('cities')
+        .select('*')
+        .order('name');
+
+      if (citiesError) throw citiesError;
+
+      // Fetch routes
+      const { data: routes, error: routesError } = await supabase
+        .from('routes')
+        .select('*')
+        .order('from_city, to_city');
+
+      if (routesError) throw routesError;
+
+      setPricing(prev => ({
+        ...prev,
+        cities: cities || [],
+        routes: routes || []
+      }));
+    } catch (error) {
+      console.error('Error fetching cities and routes:', error);
+      toast.error('Failed to load cities and routes');
+    }
+  };
 
   const login = async (username: string, password: string) => {
     // Simple admin credentials (in production, this should be more secure)
@@ -105,76 +139,146 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updatePricing = (newPricing: PricingConfig) => {
     setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
+    localStorage.setItem('Saffari_mumbai_pricing', JSON.stringify(newPricing));
   };
 
-  const addCity = (city: string) => {
-    const newPricing = {
-      ...pricing,
-      cities: [...pricing.cities, city]
-    };
-    setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
-  };
+  const addCity = async (cityName: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('cities')
+        .insert({ name: cityName })
+        .select()
+        .single();
 
-  const removeCity = (city: string) => {
-    const newPricing = {
-      ...pricing,
-      cities: pricing.cities.filter(c => c !== city)
-    };
-    setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
-  };
+      if (error) throw error;
 
-  const addRoute = (fromCity: string, toCity: string, fourSeaterPrice: number, sixSeaterPrice: number) => {
-    const routeKey = `${fromCity}-${toCity}`;
-    const reverseRouteKey = `${toCity}-${fromCity}`;
-    
-    // Check if route already exists (in either direction)
-    if (pricing.outstation[routeKey] || pricing.outstation[reverseRouteKey]) {
-      throw new Error('Route already exists');
+      setPricing(prev => ({
+        ...prev,
+        cities: [...prev.cities, data]
+      }));
+
+      toast.success('City added successfully');
+      return true;
+    } catch (error: any) {
+      console.error('Error adding city:', error);
+      if (error.code === '23505') {
+        toast.error('City already exists');
+      } else {
+        toast.error('Failed to add city');
+      }
+      return false;
     }
-    
-    const newPricing = {
-      ...pricing,
-      outstation: {
-        ...pricing.outstation,
-        [routeKey]: {
-          '4-seater': fourSeaterPrice,
-          '6-seater': sixSeaterPrice
-        }
-      }
-    };
-    setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
   };
 
-  const updateRoute = (routeKey: string, fourSeaterPrice: number, sixSeaterPrice: number) => {
-    const newPricing = {
-      ...pricing,
-      outstation: {
-        ...pricing.outstation,
-        [routeKey]: {
-          '4-seater': fourSeaterPrice,
-          '6-seater': sixSeaterPrice
-        }
-      }
-    };
-    setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
+  const removeCity = async (cityId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('cities')
+        .delete()
+        .eq('id', cityId);
+
+      if (error) throw error;
+
+      setPricing(prev => ({
+        ...prev,
+        cities: prev.cities.filter(c => c.id !== cityId)
+      }));
+
+      toast.success('City removed successfully');
+      return true;
+    } catch (error) {
+      console.error('Error removing city:', error);
+      toast.error('Failed to remove city');
+      return false;
+    }
   };
 
-  const deleteRoute = (routeKey: string) => {
-    const { [routeKey]: deletedRoute, ...remainingRoutes } = pricing.outstation;
-    const newPricing = {
-      ...pricing,
-      outstation: remainingRoutes
-    };
-    setPricing(newPricing);
-    localStorage.setItem('Saffari_pricing', JSON.stringify(newPricing));
+  const addRoute = async (fromCity: string, toCity: string, fourSeaterPrice: number, sixSeaterPrice: number): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('routes')
+        .insert({
+          from_city: fromCity,
+          to_city: toCity,
+          price_4_seater: fourSeaterPrice,
+          price_6_seater: sixSeaterPrice
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPricing(prev => ({
+        ...prev,
+        routes: [...prev.routes, data]
+      }));
+
+      toast.success('Route added successfully');
+      return true;
+    } catch (error: any) {
+      console.error('Error adding route:', error);
+      if (error.code === '23505') {
+        toast.error('Route already exists');
+      } else {
+        toast.error('Failed to add route');
+      }
+      return false;
+    }
   };
+
+  const updateRoute = async (routeId: string, fourSeaterPrice: number, sixSeaterPrice: number): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase
+        .from('routes')
+        .update({
+          price_4_seater: fourSeaterPrice,
+          price_6_seater: sixSeaterPrice
+        })
+        .eq('id', routeId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPricing(prev => ({
+        ...prev,
+        routes: prev.routes.map(r => r.id === routeId ? data : r)
+      }));
+
+      toast.success('Route updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating route:', error);
+      toast.error('Failed to update route');
+      return false;
+    }
+  };
+
+  const deleteRoute = async (routeId: string): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('routes')
+        .delete()
+        .eq('id', routeId);
+
+      if (error) throw error;
+
+      setPricing(prev => ({
+        ...prev,
+        routes: prev.routes.filter(r => r.id !== routeId)
+      }));
+
+      toast.success('Route deleted successfully');
+      return true;
+    } catch (error) {
+      console.error('Error deleting route:', error);
+      toast.error('Failed to delete route');
+      return false;
+    }
+  };
+
   return (
-    <AdminContext.Provider value={{ admin, pricing, login, logout, updatePricing, addCity, removeCity, addRoute, updateRoute, deleteRoute }}>
+    <AdminContext.Provider value={{ admin, pricing, login, logout, updatePricing, addCity, removeCity, addRoute, updateRoute, deleteRoute, fetchCitiesAndRoutes }}>
       {children}
     </AdminContext.Provider>
   );
