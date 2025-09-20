@@ -174,7 +174,7 @@ const AdminDashboard: React.FC = () => {
           price_6_seater: route.price_6_seater
         }
       });
-      setEditingRoute(null);
+      setEditingRoute(routeId);
     }
   };
 
@@ -736,13 +736,7 @@ const AdminDashboard: React.FC = () => {
                             <span className="text-sm text-gray-600 dark:text-gray-300">6-seater: ₹{route.price_6_seater}</span>
                             <button
                               onClick={() => {
-                                setEditingRoute(route.id);
-                                setTempRoutes({
-                                  [route.id]: {
-                                    price_4_seater: route.price_4_seater,
-                                    price_6_seater: route.price_6_seater
-                                  }
-                                });
+                                handleEditRoute(route.id);
                               }}
                               className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
                             >
