@@ -1,36 +1,76 @@
 import React, { useState, useEffect } from 'react';
 import { Navigation } from 'lucide-react';
 import { motion } from 'framer-motion';
-// The following imports are commented out to resolve the compilation error
-// import { useAdmin } from '../contexts/AdminContext';
-// import { useAuth } from '../contexts/AuthContext';
-// import { supabase } from '../lib/supabase';
 import toast from 'react-hot-toast';
-// import RouteMap from './RouteMap';
-// import FareBreakdown from './FareBreakdown';
-// import GoogleMapsAutocomplete from './LocationIQAutocomplete';
 
-// I've temporarily added mock functions and objects to make the code runnable
-// You should replace these with your actual implementations
-const useAdmin = () => ({
-  pricing: {
-    mumbaiLocal: [{
-      normal_4_seater_rate_per_km: 15,
-      normal_6_seater_rate_per_km: 20,
-      airport_4_seater_rate_per_km: 18,
-      airport_6_seater_rate_per_km: 25,
-    }],
-  },
-});
-const useAuth = () => ({ user: null });
+// --- MOCK IMPLEMENTATIONS (REPLACE WITH YOUR ACTUAL IMPORTS) ---
 const supabase = {
   from: () => ({
     insert: () => ({ error: null }),
+    select: () => ({
+      eq: () => ({
+        single: () => Promise.resolve({ data: { 
+          normal_4_seater_rate_per_km: 15,
+          normal_6_seater_rate_per_km: 20,
+          airport_4_seater_rate_per_km: 18,
+          airport_6_seater_rate_per_km: 25,
+        }, error: null }),
+      }),
+    }),
   }),
 };
-const RouteMap = () => null;
-const FareBreakdown = () => null;
-const GoogleMapsAutocomplete = ({ onChange, ...props }) => <input type="text" onChange={(e) => onChange(e.target.value)} {...props} />;
+
+const useAdmin = () => {
+  const [pricing, setPricing] = useState({ mumbaiLocal: null });
+  useEffect(() => {
+    supabase.from('local_fares').select('*').eq('service_area', 'Mumbai Local').single()
+      .then(({ data }) => {
+        setPricing(prev => ({ ...prev, mumbaiLocal: data }));
+      })
+      .catch(error => console.error('Mock AdminContext Error:', error));
+  }, []);
+  return { pricing };
+};
+
+const useAuth = () => ({ user: null });
+const RouteMap = ({ pickup, drop }) => <div className="bg-gray-200 dark:bg-gray-700 w-full h-72 rounded-xl flex items-center justify-center">Route Map Mock</div>;
+const FareBreakdown = ({ distance, duration, ratePerKm, total, isMinimumFare }) => (
+  <div className="p-6 bg-white dark:bg-gray-700 rounded-xl shadow-md space-y-4">
+    <h3 className="text-xl font-bold">Trip Details</h3>
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+        <span>Distance</span>
+        <span>{distance} km</span>
+      </div>
+      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+        <span>Duration</span>
+        <span>{Math.round(duration)} min</span>
+      </div>
+    </div>
+    <div className="border-t border-gray-300 dark:border-gray-600 pt-4">
+      <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
+        <span>Rate per Km</span>
+        <span>₹{ratePerKm}</span>
+      </div>
+      <div className="flex justify-between items-center mt-2 font-bold text-lg text-gray-900 dark:text-white">
+        <span>Estimated Fare</span>
+        <span>₹{total}</span>
+      </div>
+      {isMinimumFare && <p className="text-red-500 text-sm mt-1">Note: Minimum fare is ₹100.</p>}
+    </div>
+  </div>
+);
+const GoogleMapsAutocomplete = ({ value, onChange, placeholder }) => (
+  <input
+    type="text"
+    value={value}
+    onChange={(e) => onChange(e.target.value)}
+    className="w-full p-3 border rounded-lg"
+    placeholder={placeholder}
+  />
+);
+// --- END OF MOCK IMPLEMENTATIONS ---
+
 
 // Helper function to validate Indian phone numbers (10 digits)
 const isValidPhoneNumber = (phone) => {
@@ -78,18 +118,14 @@ const MumbaiLocalBooking = () => {
   const [duration, setDuration] = useState(0);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Assuming `useAdmin` fetches and provides the `local_fares` data
-  // under `pricing.mumbaiLocal`
   const { pricing } = useAdmin();
   const { user } = useAuth();
   
-  // A temporary state for Mumbai local pricing to avoid errors if the context isn't ready
   const [mumbaiLocalRates, setMumbaiLocalRates] = useState(null);
 
   useEffect(() => {
-    // This effect ensures we have the pricing data before calculating fare
-    if (pricing?.mumbaiLocal?.length > 0) {
-      setMumbaiLocalRates(pricing.mumbaiLocal[0]);
+    if (pricing?.mumbaiLocal) {
+      setMumbaiLocalRates(pricing.mumbaiLocal);
     }
   }, [pricing]);
 
