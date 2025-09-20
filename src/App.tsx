@@ -33,10 +33,6 @@ function AppLayout() {
       
       {/* Conditionally render the Footer and StickyButton */}
       {!isAdminRoute && <Footer />}
-<<<<<<< HEAD
-=======
-   
->>>>>>> b15ac90c810ce5a3c64edd407f420d64c810510e
 
       <Toaster position="top-right" />
     </div>
