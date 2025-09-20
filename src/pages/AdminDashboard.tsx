@@ -743,7 +743,7 @@ const AdminDashboard: React.FC = () => {
                                     price_6_seater: route.price_6_seater
                                   }
                                 });
-                              })}
+                              }}
                               className="p-2 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded"
                             >
                               <Edit className="w-4 h-4" />
