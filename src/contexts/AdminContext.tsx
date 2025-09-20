@@ -21,13 +21,18 @@ interface Route {
   price_6_seater: number;
 }
 
+// New interface for the local fares table
+interface LocalFare {
+  id: string;
+  service_area: string;
+  normal_4_seater_rate_per_km: number;
+  normal_6_seater_rate_per_km: number;
+  airport_4_seater_rate_per_km: number;
+  airport_6_seater_rate_per_km: number;
+}
+
 interface PricingConfig {
-  mumbaiLocal: {
-    fourSeaterRate: number;
-    sixSeaterRate: number;
-    airportFourSeaterRate: number;
-    airportSixSeaterRate: number;
-  };
+  mumbaiLocal: LocalFare | null; // Updated to use the new LocalFare interface
   cities: City[];
   routes: Route[];
 }
@@ -44,6 +49,7 @@ interface AdminContextType {
   updateRoute: (routeId: string, fourSeaterPrice: number, sixSeaterPrice: number) => Promise<boolean>;
   deleteRoute: (routeId: string) => Promise<boolean>;
   fetchCitiesAndRoutes: () => Promise<void>;
+  fetchLocalFares: () => Promise<void>; // Added new method to fetch local fares
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -57,12 +63,7 @@ export const useAdmin = () => {
 };
 
 const defaultPricing: PricingConfig = {
-  mumbaiLocal: {
-    fourSeaterRate: 15, // per km for 4-seater
-    sixSeaterRate: 18, // per km for 6-seater
-    airportFourSeaterRate: 18, // per km for 4-seater airport transfers
-    airportSixSeaterRate: 22 // per km for 6-seater airport transfers
-  },
+  mumbaiLocal: null, // Set to null initially, as it will be fetched from the database
   cities: [],
   routes: []
 };
@@ -72,38 +73,28 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [pricing, setPricing] = useState<PricingConfig>(defaultPricing);
 
   useEffect(() => {
-    // Check for existing admin session
     const savedAdmin = localStorage.getItem('Saffari_admin');
-    const savedPricing = localStorage.getItem('Saffari_mumbai_pricing');
-    
     if (savedAdmin) {
       setAdmin(JSON.parse(savedAdmin));
     }
     
-    if (savedPricing) {
-      setPricing(JSON.parse(savedPricing));
-    } else {
-      // Fetch cities and routes from database
-      fetchCitiesAndRoutes();
-    }
+    // Fetch all pricing data from the database on component mount
+    fetchCitiesAndRoutes();
+    fetchLocalFares();
   }, []);
 
   const fetchCitiesAndRoutes = async () => {
     try {
-      // Fetch cities
       const { data: cities, error: citiesError } = await supabase
         .from('cities')
         .select('*')
         .order('name');
-
       if (citiesError) throw citiesError;
 
-      // Fetch routes
       const { data: routes, error: routesError } = await supabase
         .from('routes')
         .select('*')
         .order('from_city, to_city');
-
       if (routesError) throw routesError;
 
       setPricing(prev => ({
@@ -117,8 +108,28 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const fetchLocalFares = async () => {
+    try {
+      const { data: localFares, error } = await supabase
+        .from('local_fares')
+        .select('*')
+        .eq('service_area', 'Mumbai Local')
+        .single();
+      
+      if (error) throw error;
+      
+      setPricing(prev => ({
+        ...prev,
+        mumbaiLocal: localFares
+      }));
+    } catch (error) {
+      console.error('Error fetching local fares:', error);
+      toast.error('Failed to load local fares');
+    }
+  };
+
   const login = async (username: string, password: string) => {
-    // Simple admin credentials (in production, this should be more secure)
+    // This simple login should be replaced with a secure method
     if (username === 'admin' && password === 'admin123') {
       const adminUser: Admin = {
         id: 'admin',
@@ -141,7 +152,9 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPricing(newPricing);
     localStorage.setItem('Saffari_mumbai_pricing', JSON.stringify(newPricing));
   };
-
+  
+  // All other functions (addCity, removeCity, addRoute, etc.) remain unchanged
+  // as they are correctly implemented to interact with their respective tables.
   const addCity = async (cityName: string): Promise<boolean> => {
     try {
       const { data, error } = await supabase
@@ -154,7 +167,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setPricing(prev => ({
         ...prev,
-        cities: [...prev.cities, data]
+        cities: [...prev.cities, data as City]
       }));
 
       toast.success('City added successfully');
@@ -210,7 +223,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setPricing(prev => ({
         ...prev,
-        routes: [...prev.routes, data]
+        routes: [...prev.routes, data as Route]
       }));
 
       toast.success('Route added successfully');
@@ -242,7 +255,7 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
       setPricing(prev => ({
         ...prev,
-        routes: prev.routes.map(r => r.id === routeId ? data : r)
+        routes: prev.routes.map(r => r.id === routeId ? data as Route : r)
       }));
 
       toast.success('Route updated successfully');
@@ -277,8 +290,24 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+
+  const value = {
+    admin,
+    pricing,
+    login,
+    logout,
+    updatePricing,
+    addCity,
+    removeCity,
+    addRoute,
+    updateRoute,
+    deleteRoute,
+    fetchCitiesAndRoutes,
+    fetchLocalFares
+  };
+
   return (
-    <AdminContext.Provider value={{ admin, pricing, login, logout, updatePricing, addCity, removeCity, addRoute, updateRoute, deleteRoute, fetchCitiesAndRoutes }}>
+    <AdminContext.Provider value={value}>
       {children}
     </AdminContext.Provider>
   );
