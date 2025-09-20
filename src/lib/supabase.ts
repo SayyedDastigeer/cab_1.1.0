@@ -92,6 +92,52 @@ export type Database = {
           updated_at?: string;
         };
       };
+      cities: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_at?: string;
+        };
+      };
+      routes: {
+        Row: {
+          id: string;
+          from_city: string;
+          to_city: string;
+          price_4_seater: number;
+          price_6_seater: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_city: string;
+          to_city: string;
+          price_4_seater: number;
+          price_6_seater: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          from_city?: string;
+          to_city?: string;
+          price_4_seater?: number;
+          price_6_seater?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 };
